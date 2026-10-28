@@ -1,0 +1,26 @@
+# Generate the Xcode project with XcodeGen:  brew install xcodegen && xcodegen
+name: DailyGoals
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.10"
+targets:
+  DailyGoals:
+    type: application
+    platform: iOS
+    sources: [DailyGoals]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.dailygoals # change to your own before uploading to TestFlight
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Daily Goals
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: Daily Goals turns your spoken thoughts into tasks.
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Daily Goals listens while you dictate a thought.
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
