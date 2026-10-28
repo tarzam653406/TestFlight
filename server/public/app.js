@@ -18,7 +18,7 @@ const SECTIONS = [
   { key: "year", label: "This year", horizon: "year" },
   { key: "someday", label: "Someday", horizon: "someday" },
 ];
-const PROVIDER_LABELS = { "google-calendar": "Calendar", capture: "Thought" };
+const PROVIDER_LABELS = { "google-calendar": "Calendar", trello: "Planyway", capture: "Thought" };
 
 let state = { date: null, today: null, agenda: null };
 
@@ -415,7 +415,7 @@ async function loadSyncState() {
     $("#sync-state").textContent = !s.providers.length
       ? "No apps connected"
       : last
-        ? `Last ${new Date(last.finishedAt).toLocaleTimeString()}${errors.length ? ` · ${errors.length} error(s): ${errors[0]}` : ""}`
+        ? `${s.providers.map((p) => PROVIDER_LABELS[p] ?? p).join(", ")} · last ${new Date(last.finishedAt).toLocaleTimeString()}${errors.length ? ` · ${errors.length} error(s): ${errors[0]}` : ""}`
         : "Not run yet";
   } catch { /* handled by api() */ }
 }

@@ -5,7 +5,8 @@ A personal goals and to-do app that:
 - keeps checklists for **today, this week, this month, this year, and someday**;
 - turns thoughts you **capture on the go** (typed, dictated, or via Siri) into tasks on the right horizon, and checks off things you say you finished, using Claude;
 - **syncs two-way with Google Calendar**: events show up as checklist items, timed tasks are added to your calendar, and ticking a box on either side ticks it on the other;
-- has a plug-in **sync engine** for other planner apps, so checking something off in one place checks it off everywhere.
+- **syncs two-way with Planyway** (through Trello, where Planyway stores your schedule): dated cards and checklist items become checklist items for their day, tasks you create here become cards, and ticking a box on either side ticks it on the other;
+- uses a plug-in **sync engine**, so checking something off in one place checks it off everywhere.
 
 ```
 server/   Node + TypeScript API, sync engine, Claude planner, and the web app (PWA)
@@ -52,14 +53,38 @@ To reach the app from your phone, host the server somewhere reachable (Fly.io, R
 
 `GOOGLE_PUSH_TASKS` decides which of your tasks are written to the calendar: `timed` (default; only tasks with a time), `all` (also adds untimed day tasks as all-day events), or `none`. Completed events get a `✓ ` prefix in Google Calendar. Adding or removing that prefix in Calendar ticks or unticks the item in the app.
 
-### Adding another planner app (e.g. "Planaway")
+### Planyway (via Trello)
 
-Each external app is a `SyncProvider` (`server/src/sync/provider.ts`) with five methods: `pull`, `setDone`, `shouldPush`, `create`, and `isConfigured`. Implement them against the app's API and register the provider in `server/src/index.ts`. The engine (`server/src/sync/engine.ts`) then takes care of:
+Planyway is a Trello Power-Up with no API of its own. What you schedule in it is saved on Trello cards (start and due dates) and checklist items (due dates), so the app syncs with Planyway through the Trello API.
 
-- importing the app's items into the right day,
-- de-duplicating an item that arrives from two apps (same title, same day),
-- a three-way merge of completion state, so a box ticked anywhere is ticked everywhere in a single sync run,
-- never pushing to an app whose pull just failed.
+| In Planyway / Trello | In Daily Goals |
+|---|---|
+| A card with a start or due date | A task on its start day (or due day). A block within one day, such as 10:00–11:30, keeps its time |
+| A checklist item with a due date | Its own task on that day |
+| Ticking the card's due date complete, or checking the item | The task is ticked, and the reverse also works |
+| — | Tasks you create here (by typing or capturing a thought) become cards in the list you choose, with start and due set from the task's time |
+
+Setup:
+
+1. Go to <https://trello.com/power-ups/admin>, create a Power-Up (any name, for your workspace), and generate an **API key**.
+2. Get a token by opening
+   `https://trello.com/1/authorize?expiration=never&scope=read,write&response_type=token&name=Daily%20Goals&key=YOUR_KEY`
+   and approving.
+3. Put both in `.env` as `TRELLO_API_KEY` and `TRELLO_TOKEN`.
+4. Optional settings:
+   - `TRELLO_BOARD_IDS` limits sync to certain boards (the id is the part after `/b/` in a board's URL). It defaults to all your open boards.
+   - `TRELLO_PUSH_LIST_ID` is the list where new tasks become cards. To find it, open any card in that list, add `.json` to the URL, and copy `idList`.
+   - `TRELLO_ONLY_MINE=true` (the default) skips cards and checklist items assigned only to other people on shared boards.
+
+Undated cards are left alone, so your backlog doesn't flood today's list.
+
+### How syncing works with several apps
+
+Items that come in from one app are **not** copied into another. Your Calendar meetings don't become Trello cards, and your Planyway cards aren't added to Google Calendar a second time (Planyway can do that itself). Only tasks created in Daily Goals are pushed out. When the same item exists in both apps (same title, same day), it's linked to one task, and ticking it anywhere ticks it everywhere.
+
+### Adding another app
+
+Each external app is a `SyncProvider` (`server/src/sync/provider.ts`) with five methods: `pull`, `setDone`, `shouldPush`, `create`, and `isConfigured`. Implement them and register the provider in `server/src/index.ts`. `server/src/sync/trello.ts` is a compact example. The engine (`server/src/sync/engine.ts`) handles importing, de-duplication, the three-way merge of completion state, and skipping pushes to an app whose pull just failed.
 
 Sync runs every `SYNC_INTERVAL_MINUTES`, a few seconds after you change something, and on demand (pull-to-refresh on iOS, or **Sync now**).
 

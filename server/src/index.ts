@@ -4,6 +4,7 @@ import { ClaudePlanner } from "./planner.ts";
 import { SyncEngine } from "./sync/engine.ts";
 import { GoogleCalendarProvider, type PushMode } from "./sync/google-calendar.ts";
 import type { SyncProvider } from "./sync/provider.ts";
+import { TrelloProvider, type TrelloPushMode } from "./sync/trello.ts";
 
 const env = process.env;
 const port = Number(env.PORT ?? 8787);
@@ -26,8 +27,19 @@ const google = new GoogleCalendarProvider(store, {
   pushMode: (env.GOOGLE_PUSH_TASKS as PushMode | undefined) ?? "timed",
 });
 
-// Register more providers (e.g. your planner app) here.
-const providers: SyncProvider[] = [google];
+// Planyway lives on Trello cards, so it syncs through the Trello API.
+const trello = new TrelloProvider({
+  apiKey: env.TRELLO_API_KEY ?? "",
+  token: env.TRELLO_TOKEN ?? "",
+  boardIds: (env.TRELLO_BOARD_IDS ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+  pushListId: env.TRELLO_PUSH_LIST_ID ?? "",
+  pushMode: (env.TRELLO_PUSH_TASKS as TrelloPushMode | undefined) ?? "all",
+  onlyMine: env.TRELLO_ONLY_MINE !== "false",
+  timeZone,
+});
+
+// Register more providers here.
+const providers: SyncProvider[] = [google, trello];
 const sync = new SyncEngine(store, providers, timeZone);
 
 const planner = env.ANTHROPIC_API_KEY || env.ANTHROPIC_AUTH_TOKEN ? new ClaudePlanner() : null;

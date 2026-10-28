@@ -51,14 +51,26 @@ describe("SyncEngine", () => {
     const calendar = new FakeProvider("calendar", () => true);
     const engine = new SyncEngine(store, [planner, calendar], TZ);
     const pid = planner.add("Write proposal");
-    await engine.sync(); // imported from planner, pushed to calendar
-    const [cid] = [...calendar.items.keys()];
-    expect(cid).toBeDefined();
+    const cid = calendar.add("Write proposal");
+    await engine.sync(); // both link to one local task
+    expect(store.tasksInPeriod("day", today)).toHaveLength(1);
 
     planner.items.get(pid)!.done = true;
     await engine.sync();
     expect(store.tasksInPeriod("day", today)[0]!.done).toBe(true);
-    expect(calendar.items.get(cid!)!.done).toBe(true);
+    expect(calendar.items.get(cid)!.done).toBe(true);
+  });
+
+  it("pushes tasks created here, but does not copy one app's items into another", async () => {
+    const store = new Store(":memory:");
+    const planner = new FakeProvider("planner", () => true);
+    const calendar = new FakeProvider("calendar", () => true);
+    calendar.add("Team meeting");
+    const mine = store.createTask({ title: "Call plumber", horizon: "day", periodStart: today, source: "capture" });
+    await new SyncEngine(store, [planner, calendar], TZ).sync();
+    const plannerTitles = [...planner.items.values()].map((i) => i.title);
+    expect(plannerTitles).toEqual(["Call plumber"]);
+    expect(store.linksForTask(mine.id).map((l) => l.provider).sort()).toEqual(["calendar", "planner"]);
   });
 
   it("pushes a box ticked locally and leaves agreed state alone", async () => {

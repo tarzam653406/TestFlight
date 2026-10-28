@@ -140,9 +140,16 @@ struct TaskRow: View {
             VStack(alignment: .trailing, spacing: 2) {
                 if let time = task.startTime { Text(time).font(.caption).foregroundStyle(.secondary) }
                 if showDate, let day = task.periodStart { Text(day).font(.caption2).foregroundStyle(.orange) }
-                if task.source == "google-calendar" || task.linkedTo.contains("google-calendar") {
-                    Image(systemName: "calendar").font(.caption2).foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    if task.source == "google-calendar" || task.linkedTo.contains("google-calendar") {
+                        Image(systemName: "calendar")
+                    }
+                    if task.source == "trello" || task.linkedTo.contains("trello") {
+                        Image(systemName: "rectangle.split.3x1") // Planyway / Trello
+                    }
                 }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
             }
         }
     }

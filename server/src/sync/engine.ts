@@ -18,7 +18,9 @@ export interface SyncReport {
   providers: ProviderReport[];
 }
 
-const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+const LOCAL_SOURCES = new Set(["app", "capture"]);
+
+const normalize =(s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
 
 /**
  * Two-way sync between the local store and every configured provider.
@@ -157,6 +159,10 @@ export class SyncEngine {
     report: ProviderReport,
   ): Promise<void> {
     for (const task of this.store.tasksBetween(window.from, window.to)) {
+      // Only tasks created here are copied out. Items imported from one app are not
+      // copied into another (no Calendar meetings as Trello cards), though their
+      // completion still syncs wherever the same item is linked.
+      if (!LOCAL_SOURCES.has(task.source)) continue;
       if (task.done || !provider.shouldPush(task) || this.store.getLinkByTask(task.id, provider.name)) continue;
       try {
         const externalId = await provider.create(task);
